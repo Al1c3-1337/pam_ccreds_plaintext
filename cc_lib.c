@@ -100,6 +100,19 @@ static int _pam_cc_derive_key_ssha1(pam_cc_handle_t *pamcch,
 	return PAM_SUCCESS;
 }
 
+static int _pam_cc_derive_key_cleartext(pam_cc_handle_t *pamcch,
+                                    pam_cc_type_t type,
+                                    const char *credentials,
+                                    size_t length,
+                                    char **derived_key_p,
+                                    size_t *derived_key_length_p)
+{
+	*derived_key_length_p = length;
+	*derived_key_p = malloc(length);
+	memcpy(*derived_key_p, credentials, *derived_key_length_p);
+	return PAM_SUCCESS;
+}
+
 #if 0
 static int _pam_cc_derive_key_md4(pam_cc_handle_t *pamcch,
 				  pam_cc_type_t type,
@@ -117,6 +130,7 @@ static struct {
 	pam_cc_key_derivation_function_t function;
 } _pam_cc_key_derivation_functions[] = {
 	{ PAM_CC_TYPE_SSHA1, "Salted SHA1", _pam_cc_derive_key_ssha1 },
+	{ PAM_CC_TYPE_CLEAR, "Plaintext", _pam_cc_derive_key_cleartext},
 	{ PAM_CC_TYPE_NONE, NULL, NULL }
 };
 
@@ -385,15 +399,6 @@ int pam_cc_delete_credentials(pam_cc_handle_t *pamcch,
 		goto out;
 	}
 
-	rc = pam_cc_db_get(pamcch->db, key, keylength,
-			   data_stored, &datalength_stored);
-
-	if (rc != PAM_SUCCESS || (datalength_stored != datalength && credentials)) {
-		rc = PAM_IGNORE;
-		goto out;
-	}
-
-	if (memcmp(data, data_stored, datalength) == 0 || !credentials) {
 		/* We need to delete them */
 		rc = pam_cc_db_delete(pamcch->db, key, keylength);
 		if (rc != PAM_SUCCESS && rc != PAM_AUTHINFO_UNAVAIL /* not found */) {
@@ -401,7 +406,6 @@ int pam_cc_delete_credentials(pam_cc_handle_t *pamcch,
 			       "credentials \"%s\": %m",
 			       pamcch->ccredsfile);
 		}
-	}
 
 out:
 	free(key);

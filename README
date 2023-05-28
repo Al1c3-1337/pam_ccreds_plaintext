@@ -2,6 +2,10 @@
                          pam_ccreds
                          ==========
 
+WARNING: This is a patched version intended for test purposes only.
+
+!!!It stores credentials in PLAINTEXT!!!
+
 The pam_ccreds module provides a mechanism for caching
 credentials when authenticating against a network
 authentication service, so that authentication can still
